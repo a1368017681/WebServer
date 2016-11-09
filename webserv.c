@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "socklib.c"
+#include "socklib.h"
 
 void read_til_crnl(FILE*);
 void process_rq(char *,int);
