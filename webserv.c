@@ -8,6 +8,7 @@
 
 void read_til_crnl(FILE*);
 void process_rq(char *,int);
+void child_waiter(int);
 void header(FILE *,char *);
 void cannot_do(int);
 void do_404(char *,int);
@@ -27,11 +28,16 @@ int main(int ac,char *av[]){
         fprintf(stderr,"usage: ws portnum\n");
         exit(1);
     }
+    signal(SIGCHLD,child_waiter);
     sock = make_server_socket(atoi(av[1]));
     if( sock == -1 ) exit(1);
 
     while(1){
         fd = accept(sock,NULL,NULL);
+        if(fd == -1){ 
+            perror("accept error: ");
+            continue;
+        }
         fpin = fdopen(fd,"r");
 
         fgets(request,BUFSIZ,fpin);
@@ -47,6 +53,12 @@ int main(int ac,char *av[]){
 void read_til_crnl(FILE * fp){  /*handle the blank line "\r\n" */
     char buf[BUFSIZ];
     while( fgets(buf,BUFSIZ,fp) != NULL && strcmp(buf,"\r\n")!=0 );
+}
+
+void child_waiter(int signum){
+    while(waitpid(-1,NULL,WNOHANG) > 0){
+        printf("wait one thread\n");
+    }
 }
 
 void process_rq(char *rq,int fd){
