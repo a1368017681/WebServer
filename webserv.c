@@ -4,7 +4,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include "socklib.h"
+
+extern int errno;
 
 void read_til_crnl(FILE*);
 void process_rq(char *,int);
@@ -35,7 +38,9 @@ int main(int ac,char *av[]){
     while(1){
         fd = accept(sock,NULL,NULL);
         if(fd == -1){ 
-            perror("accept error: ");
+            if(errno != EINTR){
+                perror("accept error: ");
+            }
             continue;
         }
         fpin = fdopen(fd,"r");
@@ -57,7 +62,7 @@ void read_til_crnl(FILE * fp){  /*handle the blank line "\r\n" */
 
 void child_waiter(int signum){
     while(waitpid(-1,NULL,WNOHANG) > 0){
-        printf("wait one thread\n");
+        printf("wait one childpro\n");
     }
 }
 
@@ -119,8 +124,9 @@ void do_ls(char* dir,int fd){
     FILE* fp;
 
     fp = fdopen(fd,"w");
-    header(fp,"text/plain");
+    header(fp,"text/html");
     fprintf(fp,"\r\n");
+    fprintf(fp, "<a href=\"./index.html\">index.html</a></br>\r\n");
     fflush(fp);
 
     dup2(fd,1);

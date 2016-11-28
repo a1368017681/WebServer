@@ -13,6 +13,7 @@ int make_server_socket_q(int portnum,int backlog){
     hp = gethostbyname(hostname);
     if(hp == NULL){
         saddr.sin_addr.s_addr = inet_addr(LOCALHOST);
+        fprintf(stdout,"hp NULL\n");
     }else{
         bcopy((void *)hp->h_addr,(void *)&saddr.sin_addr,hp->h_length);
     }
