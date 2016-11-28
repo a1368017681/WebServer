@@ -1,5 +1,5 @@
 #include "socklib.h"
-
+#include "util.h"
 int make_server_socket_q(int portnum,int backlog){
     struct sockaddr_in saddr;
     struct hostent* hp;
@@ -7,20 +7,31 @@ int make_server_socket_q(int portnum,int backlog){
     int sock_id;
     
     sock_id = socket(PF_INET,SOCK_STREAM,0);
-    if(sock_id == -1) return -1;
+    if(sock_id == -1) {
+        ERROR_INFO(SOCKET_ERROR);
+        return -1;
+    }
     bzero((void *)&saddr,sizeof(saddr));
     gethostname(hostname,HOSTLEN);
     hp = gethostbyname(hostname);
     if(hp == NULL){
         saddr.sin_addr.s_addr = inet_addr(LOCALHOST);
-        fprintf(stdout,"hp NULL\n");
+        //fprintf(stdout,"hp NULL\n");
+        ERROR_INFO(CANNOT_FIND_HOST);
+
     }else{
         bcopy((void *)hp->h_addr,(void *)&saddr.sin_addr,hp->h_length);
     }
     saddr.sin_port = htons(portnum);
     saddr.sin_family = AF_INET;
-    if( bind(sock_id,(struct sockaddr *)&saddr,sizeof(saddr)) != 0) return -1;
-    if( listen(sock_id,backlog) != 0 ) return -1;
+    if( bind(sock_id,(struct sockaddr *)&saddr,sizeof(saddr)) != 0){
+        ERROR_INFO(BIND_ERROR);
+        return -1;
+    }
+    if( listen(sock_id,backlog) != 0 ) {
+        ERROR_INFO(LISTEN_ERROR);
+        return -1;
+    }
     return sock_id;
 }
 

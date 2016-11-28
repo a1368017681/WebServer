@@ -1,5 +1,5 @@
-#ifndef SOCKLIB_H_
-#define SOCKLIB_H_
+#ifndef _SOCKLIB_H_
+#define _SOCKLIB_H_
 
 #include <stdio.h>
 #include <stdlib.h>

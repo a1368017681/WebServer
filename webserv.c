@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include "socklib.h"
+#include "util.h"
 
 extern int errno;
 
@@ -28,7 +29,7 @@ int main(int ac,char *av[]){
     FILE *fpin;
     char request[BUFSIZ];
     if( ac == 1 ){
-        fprintf(stderr,"usage: ws portnum\n");
+        ERROR_OPE(NO_PORTNUM_ERROR);
         exit(1);
     }
     signal(SIGCHLD,child_waiter);
@@ -39,7 +40,7 @@ int main(int ac,char *av[]){
         fd = accept(sock,NULL,NULL);
         if(fd == -1){ 
             if(errno != EINTR){
-                perror("accept error: ");
+                ERROR_INFO(ACCEPT_ERROR);
             }
             continue;
         }
