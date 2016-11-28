@@ -23,13 +23,14 @@ char* file_type(char *);
 int ends_in_cgi(char *);
 void do_exec(char *,int);
 void do_cat(char *,int);
+int IsDirectory(const char*);
 
 int main(int ac,char *av[]){
     int sock,fd;
     FILE *fpin;
     char request[BUFSIZ];
     if( ac == 1 ){
-        ERROR_OPE(NO_PORTNUM_ERROR);
+        ERROR_STR(NO_PORTNUM_ERROR);
         exit(1);
     }
     signal(SIGCHLD,child_waiter);
@@ -40,7 +41,7 @@ int main(int ac,char *av[]){
         fd = accept(sock,NULL,NULL);
         if(fd == -1){ 
             if(errno != EINTR){
-                ERROR_INFO(ACCEPT_ERROR);
+                ERROR_STR(ACCEPT_ERROR);
             }
             continue;
         }
@@ -121,22 +122,52 @@ int not_exist(char* f){
     return ( stat(f,&info) == -1 );
 }
 
+int IsDirectory(const char* dirName){
+    struct stat sDir;
+    if(stat(dirName,&sDir) < 0)
+        return 0;
+    if(S_IFDIR == (sDir.st_mode & S_IFMT))
+        return 1;
+    return 0;
+}
+
 void do_ls(char* dir,int fd){
     FILE* fp;
+    DIR *dp;
+    struct dirent *dirp;
+    struct stat buf;
+    char fileName[BUFSIZ];
+    char dirNames[BUFSIZ][BUFSIZ];
+    int i,j,n;
 
+    if(strcmp(dir,".") == 0)
+        strcat(dir,"/");
+    fprintf(stdout, "dirname: %s\n", dir);
+    if((dp = opendir(dir)) == NULL)
+        ERROR_STR("open dir error");
     fp = fdopen(fd,"w");
     header(fp,"text/html");
+
     fprintf(fp,"\r\n");
-    fprintf(fp, "<a href=\"./index.html\">index.html</a></br>\r\n");
+    fprintf(fp, "<font size=\"20\" color=\"blue\">Index of /</font></br></br>\r\n");
+    while((dirp = readdir(dp)) != NULL){
+        strcpy(fileName,"");
+        strcat(fileName,dir);
+        strcat(fileName,dirp->d_name);
+        //perror("perror:    ");
+        fprintf(stdout, "%s\n",fileName);
+        fprintf(fp, "<a href=\"%s\">%s</a></br>\r\n", fileName,fileName);
+        //fprintf(fp, "<a href=\"./index.html\">index.html</a></br>\r\n");
+    }
     fflush(fp);
 
     dup2(fd,1);
     dup2(fd,2);
     close(fd);
     
-    execlp("ls","ls","-l",dir,NULL);
+    /*execlp("ls","ls","-l",dir,NULL);
     perror(dir);
-    exit(1);
+    exit(1);*/
 }
 
 char* file_type(char* f){

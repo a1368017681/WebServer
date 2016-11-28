@@ -21,6 +21,7 @@ int make_server_socket_q(int portnum,int backlog){
 
     }else{
         bcopy((void *)hp->h_addr,(void *)&saddr.sin_addr,hp->h_length);
+        //fprintf(stdout, "asdasdasd\n");
     }
     saddr.sin_port = htons(portnum);
     saddr.sin_family = AF_INET;
