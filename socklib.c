@@ -16,7 +16,6 @@ int make_server_socket_q(int portnum,int backlog){
     hp = gethostbyname(hostname);
     if(hp == NULL){
         saddr.sin_addr.s_addr = inet_addr(LOCALHOST);
-        //fprintf(stdout,"hp NULL\n");
         ERROR_INFO(CANNOT_FIND_HOST);
 
     }else{

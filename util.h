@@ -15,6 +15,8 @@
 #define LISTEN_ERROR "listen port error!"
 #define ACCEPT_ERROR "socket accept error!"
 #define HTML_TEXT "<html><head><title></title></head><body></body></html>"
+#define CUR_DIR "."
+#define FATHER_DIR ".."
 
 #define ERROR_INFO(str)\
 	fprintf(stderr, "%s:%d: %s\n", __FILE__,__LINE__,str);\

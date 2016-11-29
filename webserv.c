@@ -33,7 +33,7 @@ int main(int ac,char *av[]){
         ERROR_STR(NO_PORTNUM_ERROR);
         exit(1);
     }
-    signal(SIGCHLD,child_waiter);
+    signal(SIGCHLD,child_waiter);   //这里要再好好想下
     sock = make_server_socket(atoi(av[1]));
     if( sock == -1 ) exit(1);
 
@@ -135,10 +135,8 @@ void do_ls(char* dir,int fd){
     FILE* fp;
     DIR *dp;
     struct dirent *dirp;
-    struct stat buf;
+    char filePath[BUFSIZ];
     char fileName[BUFSIZ];
-    char dirNames[BUFSIZ][BUFSIZ];
-    int i,j,n;
 
     if(strcmp(dir,".") == 0)
         strcat(dir,"/");
@@ -151,13 +149,20 @@ void do_ls(char* dir,int fd){
     fprintf(fp,"\r\n");
     fprintf(fp, "<font size=\"20\" color=\"blue\">Index of /</font></br></br>\r\n");
     while((dirp = readdir(dp)) != NULL){
+        strcpy(filePath,"");
         strcpy(fileName,"");
-        strcat(fileName,dir);
+        strcat(filePath,dir);
+        strcat(filePath,dirp->d_name);
         strcat(fileName,dirp->d_name);
-        //perror("perror:    ");
-        fprintf(stdout, "%s\n",fileName);
-        fprintf(fp, "<a href=\"%s\">%s</a></br>\r\n", fileName,fileName);
-        //fprintf(fp, "<a href=\"./index.html\">index.html</a></br>\r\n");
+        if(IsDirectory(fileName) && strcmp(fileName,"./") && strcmp(fileName,"../"))
+        	strcat(fileName,"/");
+        fprintf(stdout, "%s\n",filePath);
+        if(!strcmp(fileName,"./"))
+        	continue;
+        if(IsDirectory(filePath) && strcmp(filePath,"./") && strcmp(filePath,"../"))
+        	fprintf(fp, "<a href=\"./%s\">%s/</a></br>\r\n", fileName,dirp->d_name);
+        else
+       		fprintf(fp, "<a href=\"./%s\">%s</a></br>\r\n",  fileName,dirp->d_name);
     }
     fflush(fp);
 
@@ -165,9 +170,6 @@ void do_ls(char* dir,int fd){
     dup2(fd,2);
     close(fd);
     
-    /*execlp("ls","ls","-l",dir,NULL);
-    perror(dir);
-    exit(1);*/
 }
 
 char* file_type(char* f){
