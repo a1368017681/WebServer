@@ -179,7 +179,7 @@ char* file_type(char* f){
 }
 
 int ends_in_cgi(char* f){
-    return ( strcmp(file_type(f),"cgi") == 0 );
+    return ( strcmp(file_type(f),"cgi") == 0 || strcmp(file_type(f),"rb") == 0 );
 }
 
 void do_exec(char* prog,int fd){
