@@ -5,7 +5,7 @@ int make_server_socket_q(int portnum,int backlog){
     struct hostent* hp;
     char hostname[HOSTLEN];
     int sock_id;
-    
+
     sock_id = socket(PF_INET,SOCK_STREAM,0);
     if(sock_id == -1) {
         ERROR_INFO(SOCKET_ERROR);

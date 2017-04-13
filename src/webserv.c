@@ -3,13 +3,28 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <signal.h>
+#include <getopt.h>
 #include "socklib.h"
 #include "util.h"
+#include "debug.h"
 
 extern int errno;
+extern struct epoll_event *event;
+
+static const struct option long_options[]={
+    {"help",no_argument,NULL,'?'},
+    {"version",no_argument,NULL,'V'},
+    {"conf",required_argument,NULL,'c'},
+    {NULL,0,NULL,0}
+};
+
+static void manual(){
+    fprintf(stderr, "%s", MANUAL);
+}
 
 void read_til_crnl(FILE*);
 void process_rq(char *,int);
@@ -27,6 +42,49 @@ void do_cat(char *,int);
 int IsDirectory(const char*);
 
 int main(int ac,char *av[]){
+    int opt = 0;
+    int opt_index = 0;
+    char *conf_file = CONF_FILE;
+
+    if(ac <= 1) {
+        manual();
+        return 0;
+    }
+
+    /*use get_optlong*/
+    while ((opt=getopt_long(ac, av,"Vc:?h",long_options,&opt_index)) != EOF) {
+        switch (opt) {
+            case 'c':
+                conf_file = optarg;
+                break;
+            case 'V':
+                fprintf(stdout,PROGRAM_VERSION"\n");
+                return 0;
+            case ':':
+            case 'h':
+            case '?':
+                manual();
+                return 0;
+            default:
+                manual();
+                return 0;
+        }
+    }
+
+    DEBUG("conf_file = %s",conf_file);
+    
+    if (optind < ac) {
+        LOG_ERROR("non-option ARGV-elements: ");
+        while (optind < ac)
+            LOG_ERROR("%s ", av[optind++]);
+        return 0;
+    }
+
+    READ_CONF_RET rc_ret = READ_CONF_OK;
+    char conf_buf[BUF_LEN];
+    server_conf_t conf;
+    rc_ret = read_conf_file(conf_file,&conf,conf_buf,BUF_LEN);
+    
     int sock,fd;
     FILE *fpin;
     char request[BUFSIZ];
@@ -34,7 +92,7 @@ int main(int ac,char *av[]){
         ERROR_STR(NO_PORTNUM_ERROR);
         exit(1);
     }
-    printf("assdfsdf\n");
+    
     signal(SIGCHLD,child_waiter);   //这里要再好好想下
     sock = make_server_socket(atoi(av[1]));
     if( sock == -1 ) exit(1);
