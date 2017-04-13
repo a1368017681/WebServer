@@ -84,7 +84,7 @@ int main(int ac,char *av[]){
     char conf_buf[BUF_LEN];
     server_conf_t conf;
     rc_ret = read_conf_file(conf_file,&conf,conf_buf,BUF_LEN);
-    
+
     int sock,fd;
     FILE *fpin;
     char request[BUFSIZ];

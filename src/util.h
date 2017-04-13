@@ -53,4 +53,6 @@ typedef struct{
 }server_conf_t;
 
 int read_conf_file(char *file_name,server_conf_t *conf,char *buf,int len);
+int is_directory(const char* dirName);
+
 #endif
