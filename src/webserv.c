@@ -11,6 +11,7 @@
 #include "socklib.h"
 #include "util.h"
 #include "debug.h"
+#include "epoll.h"
 
 extern int errno;
 extern struct epoll_event *event;
@@ -71,25 +72,47 @@ int main(int ac,char *av[]){
         }
     }
 
-    DEBUG("conf_file = %s",conf_file);
+    DEBUG("conf file = %s",conf_file);
     
     if (optind < ac) {
-        LOG_ERROR("non-option ARGV-elements: ");
+        LOG_ERROR("non-option ARGV-elements: %s","");
         while (optind < ac)
             LOG_ERROR("%s ", av[optind++]);
         return 0;
     }
 
+    /*读取配置文件*/
     READ_CONF_RET rc_ret = READ_CONF_OK;
     server_conf_t conf;
     rc_ret = read_conf_file(conf_file,&conf);
-    if(READ_CONF_OK != rc_ret) {
-        return 0;
-    }
+    CHECK_EXIT(READ_CONF_OK == rc_ret,"read conf file error!%s","");
 
-    return 0;
-    int sock,fd;
-    FILE *fpin;
+    /*注册signal的处理函数，解决SIGPIP可能导致的系统崩溃问题*/
+    struct sigaction sa;
+    memset(&sa, '\0', sizeof(sa));
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_IGN;
+    CHECK_EXIT((0 == sigaction(SIGPIPE, &sa, NULL)),"install sigal handler for SIGPIPE failed!%s","");
+    /*if (sigaction(SIGPIPE, &sa, NULL)) {
+        LOG_ERROR("install sigal handler for %s failed","SIGPIPE");
+        return 0;
+    }*/
+
+    /*初始化socke操作*/
+    int listen_fd;
+    struct sockaddr_in client_addr;
+    memset(&client_addr, 0 , sizeof(client_addr));
+    socklen_t inlen = 1;
+
+    listen_fd = make_server_socket(conf.port);
+    int ret = make_socket_non_blocking(listen_fd);
+    CHECK(ret == 0, "make_socket_non_blocking error%s","");
+
+    /*使用epoll*/
+    struct epoll_event event;
+    int epfd = server_epoll_create(0);
+    
+    /*FILE *fpin;
     char request[BUFSIZ];
     if( ac == 1 ){
         ERROR_STR(NO_PORTNUM_ERROR);
@@ -116,7 +139,7 @@ int main(int ac,char *av[]){
 
         process_rq(request,fd);
         fclose(fpin);
-    }
+    }*/
     return 0;
 }
 

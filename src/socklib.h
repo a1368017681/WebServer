@@ -11,14 +11,13 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <time.h>
-#include "debug.h"
 
 #define HOSTLEN 256
-#define BACKLOG 1
+#define BACKLOG 1024
 #define LOCALHOST "127.0.0.1"
 
-int make_server_socket_q(int,int);
-int make_server_socket(int);
+int make_server_socket(uint port_num);
 int connect_to_server(char*,int);
+int make_socket_non_blocking(int listen_fd);
 
 #endif

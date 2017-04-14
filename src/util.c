@@ -1,5 +1,6 @@
 #include "util.h"
 
+/*读取配置文件*/
 READ_CONF_RET read_conf_file(char *file_name,server_conf_t *conf) {
 	FILE *fp = fopen(file_name, "r");
 	if(!fp){
