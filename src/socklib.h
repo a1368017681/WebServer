@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <time.h>
+#include "debug.h"
 
 #define HOSTLEN 256
 #define BACKLOG 1

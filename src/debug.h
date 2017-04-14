@@ -2,7 +2,13 @@
 #define _DEBUG_H_
 
 #include <errno.h>
-#include "util.h"
+
+#define NO_PORTNUM_ERROR "no portnum error!"
+#define SOCKET_ERROR "build socket failed!"
+#define CANNOT_FIND_HOST "cannot find host by name(maybe gethostbyname() error)! use 127.0.0.1 directly"
+#define BIND_ERROR "bind port error!"
+#define LISTEN_ERROR "listen port error!"
+#define ACCEPT_ERROR "socket accept error!"
 
 #define DEBUG(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 

@@ -7,18 +7,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "parson.h"
+#include "debug.h"
 
-#define CONF_FILE "server.conf"
+#define CONF_FILE "server.json"
 #define PROGRAM_VERSION "1.0"
 
-#define BUF_LEN 1024
-
-#define NO_PORTNUM_ERROR "no portnum error!"
-#define SOCKET_ERROR "build socket failed!"
-#define CANNOT_FIND_HOST "cannot find host by name(maybe gethostbyname() error)! use 127.0.0.1 directly"
-#define BIND_ERROR "bind port error!"
-#define LISTEN_ERROR "listen port error!"
-#define ACCEPT_ERROR "socket accept error!"
+#define BUF_LEN 4096
 
 #define HTML_TEXT "<html><head><title></title></head><body></body></html>"
 
@@ -43,16 +38,20 @@
 typedef enum
 {
 	READ_CONF_OK = 0,
+	OPEN_CONF_FILE_FAIL,
+	CONF_FILE_PARSE_FAIL,
+	CONF_FILE_FORM_WRONG,
 	READ_CONF_FAIL
 }READ_CONF_RET;
 
 typedef struct{
 	void* root;
-	int port;
-	int thread_num;
+	uint port;
+	uint thread_num;
 }server_conf_t;
 
-int read_conf_file(char *file_name,server_conf_t *conf,char *buf,int len);
+typedef unsigned int uint;
+READ_CONF_RET read_conf_file(char *file_name,server_conf_t *conf);
 int is_directory(const char* dirName);
 
 #endif

@@ -81,10 +81,13 @@ int main(int ac,char *av[]){
     }
 
     READ_CONF_RET rc_ret = READ_CONF_OK;
-    char conf_buf[BUF_LEN];
     server_conf_t conf;
-    rc_ret = read_conf_file(conf_file,&conf,conf_buf,BUF_LEN);
+    rc_ret = read_conf_file(conf_file,&conf);
+    if(READ_CONF_OK != rc_ret) {
+        return 0;
+    }
 
+    return 0;
     int sock,fd;
     FILE *fpin;
     char request[BUFSIZ];
