@@ -8,13 +8,14 @@
 #include <errno.h>
 #include <signal.h>
 #include <getopt.h>
+#include <time.h>
 #include "socklib.h"
 #include "util.h"
 #include "debug.h"
 #include "epoll.h"
 
 extern int errno;
-extern struct epoll_event *event;
+extern struct epoll_event *events;
 
 static const struct option long_options[]={
     {"help",no_argument,NULL,'?'},
@@ -111,7 +112,27 @@ int main(int ac,char *av[]){
     /*使用epoll*/
     struct epoll_event event;
     int epfd = server_epoll_create(0);
+
+    event.data.ptr = NULL;
+    event.events = EPOLLIN | EPOLLET;
+    server_epoll_add(epfd,listen_fd,&event);
     
+    
+    
+    time_t time_now = time(NULL);
+    LOG_INFO("server start at :%s",ctime(&time_now));
+
+    /*for(;;){
+        int n = server_epoll_wait(epfd,events,MAXEVENTS,0);
+    }*/
+
+    /*由于TCP/IP协议栈是维护着一个接收和发送缓冲区的。
+    在接收到来自客户端的数据包后，服务器端的TCP/IP协议栈应该会做如下处理：
+    如果收到的是请求连接的数据包，则传给监听着连接请求端口的socetfd套接字，
+    进行accept处理；如果是已经建立过连接后的客户端数据包，则将数据放入接收缓冲区。
+    这样，当服务器端需要读取指定客户端的数据时，
+    则可以利用socketfd_new 套接字通过recv或者read函数到缓冲区里面去取指定的数据
+    （因为socketfd_new代表的socket对象记录了客户端IP和端口，因此可以鉴别）。*/
     /*FILE *fpin;
     char request[BUFSIZ];
     if( ac == 1 ){
