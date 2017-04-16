@@ -25,5 +25,8 @@
 
 #define CHECK_EXIT(A, M, ...) if(!(A)) { LOG_ERROR(M "\n", ##__VA_ARGS__); exit(1);}
 
-#define check_debug(A, M, ...) if(!(A)) { debug(M "\n", ##__VA_ARGS__); /* exit(1); */}
+#define CHECK_BREAK(A, M, ...) if((!(A))) { LOG_ERROR(M "\n", ##__VA_ARGS__); break;}
+
+#define CHECK_DEBUG(A, M, ...) if(!(A)) { debug(M "\n", ##__VA_ARGS__); /* exit(1); */}
+
 #endif

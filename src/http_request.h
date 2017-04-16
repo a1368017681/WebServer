@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stdlib.h> 
 #include "http_response.h"
+#include "util.h"
 
 #define MAX_BUF 8192
 
@@ -18,6 +19,11 @@ typedef enum {
 typedef struct {
 	void* root;//根目录位置
 	int fd,epfd;
-	char buf[MAX_BUF];	
-}http_request;
+	char buf[MAX_BUF];
+	int major;
+	int minjor;		
+}http_request_t;
+
+void init_http_request(http_request_t* request,int listed_fd,int epfd,server_conf_t* conf);
+
 #endif

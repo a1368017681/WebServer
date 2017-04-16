@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <netinet/in.h>
 #include <errno.h>
 #include <signal.h>
 #include <getopt.h>
@@ -13,6 +14,7 @@
 #include "util.h"
 #include "debug.h"
 #include "epoll.h"
+#include "http_response.h"
 
 extern int errno;
 extern struct epoll_event *events;
@@ -103,7 +105,7 @@ int main(int ac,char *av[]){
     int listen_fd;
     struct sockaddr_in client_addr;
     memset(&client_addr, 0 , sizeof(client_addr));
-    socklen_t inlen = 1;
+    socklen_t accept_len = sizeof(struct sockaddr_in);
 
     listen_fd = make_server_socket(conf.port);
     int ret = make_socket_non_blocking(listen_fd);
@@ -113,18 +115,69 @@ int main(int ac,char *av[]){
     struct epoll_event event;
     int epfd = server_epoll_create(0);
 
-    event.data.ptr = NULL;
+    http_request_t *http_request = (http_request_t *)malloc(sizeof(http_request_t));
+    init_http_request(http_request,listen_fd,epfd,&conf);
+
+    event.data.ptr = (void*)http_request;
     event.events = EPOLLIN | EPOLLET;
     server_epoll_add(epfd,listen_fd,&event);
     
-    
-    
-    time_t time_now = time(NULL);
-    LOG_INFO("server start at :%s",ctime(&time_now));
 
-    /*for(;;){
+    time_t time_now = time(NULL);
+    LOG_INFO("listen_fd is : %d",listen_fd);
+    LOG_INFO("server start at :%s",ctime(&time_now));
+    
+
+    /*event-driven大体框架*/
+    for(;;){
         int n = server_epoll_wait(epfd,events,MAXEVENTS,0);
-    }*/
+
+        for(int i = 0; i < n; i++) {
+            http_request_t *request = (http_request_t *)events[i].data.ptr;
+            int fd = request->fd;
+
+            if(fd == listen_fd) { //fd为socket建立的fd表明这是一条新的连接
+                int accept_fd;
+
+                for(;;) { //监听请求连接的数据
+                    accept_fd = accept(listen_fd,(struct sockaddr_in *)&client_addr,&accept_len);
+                    if(accept_fd < 0) {  //accept出错
+                        if(errno != EAGAIN && errno != EWOULDBLOCK) {
+                            LOG_ERROR(ACCEPT_ERROR,"");
+                            break;
+                        }
+                        break;
+                    }
+
+                    /*为new出来的fd做socket操作*/
+                    int tmp_ret = make_socket_non_blocking(accept_fd);
+                    CHECK(tmp_ret == 0,"make_socket_non_blocking error fd : %d",tmp_ret);
+                    LOG_INFO("new http connection fd %d",accept_fd);
+
+                    /*初始化新连接请求*/
+                    http_request_t *request_new = (http_request_t *)malloc(sizeof(http_request_t));
+                    CHECK_BREAK(NULL != request_new,"malloc(http_request_t) error!%s","");
+                    init_http_request(request_new,accept_fd,epfd,&conf);
+                    event.data.ptr = (void *)request_new;
+                    event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+
+                    /*epoll操作*/
+                    server_epoll_add(epfd,accept_fd,&event);
+                }
+            } else {
+                if ((events[i].events & EPOLLERR) ||
+                    (events[i].events & EPOLLHUP) ||
+                    (!(events[i].events & EPOLLIN))) {
+                    LOG_ERROR("epoll error fd: %d", request->fd);
+                    close(fd);
+                    continue;
+                }
+
+                LOG_INFO("new data from fd : %d",fd);
+                do_request(events[i].data.ptr);
+            }
+        }
+    }
 
     /*由于TCP/IP协议栈是维护着一个接收和发送缓冲区的。
     在接收到来自客户端的数据包后，服务器端的TCP/IP协议栈应该会做如下处理：
