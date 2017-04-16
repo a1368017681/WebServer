@@ -5,4 +5,6 @@
 #include "http_request.h"
 #include "util.h"
 
+void init_timer();
+
 #endif
