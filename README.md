@@ -1,11 +1,12 @@
 # WebServer
-a sample webserver written by C</br>
-<code>
-git clone url</br>
-cd WebServer</br>
-mkdir build</br>
-cd build</br>
-cmake -DCMAKE_BUILD_TYPE=Debug ..</br>
-make</br>
-./webserv 12345</br>
+a sample webserver written by C in linux</br>
+<pre>
+<code>git clone url
+cd WebServer
+mkdir build
+cd build
+cmake ..
+make
+./webserv -c ../server.conf
 </code>
+</pre>
