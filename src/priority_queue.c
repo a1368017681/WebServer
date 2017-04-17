@@ -71,7 +71,7 @@ PQ_STATUS insert_item_pq(priority_queue_t* ptr,void *item) {
 	int size = ptr->size;
 	if((size + 1) == ptr->capacity) {
 		int ret = resize(ptr,ptr->capacity * 2);
-		if(!ret) {
+		if(ret) {
 			LOG_ERROR("insert_item pq resize error!%s","");
 			return RESIZE_PQ_FAIL;
 		}
@@ -88,10 +88,12 @@ static void sink(priority_queue_t* ptr,int index) {
 	int k = index;
 	while((k<<1) <= ptr->size) {
 		int j = (k << 1);
-		if(j < ptr->size && ptr->cmp(ptr->priority_queue[j],ptr->priority_queue[j+1])) {
+		if(j < ptr->size && ptr->cmp(ptr->priority_queue[j+1],ptr->priority_queue[j])) {
 			j = j + 1;
 		}
-		swap(ptr,k,j);
+		if(!ptr->cmp(ptr->priority_queue[j],ptr->priority_queue[k]))
+			break;
+		swap(ptr,j,k);
 		k = j;
 	}
 }
@@ -106,8 +108,8 @@ PQ_STATUS del_min_pq(priority_queue_t* ptr) {
 	sink(ptr,1);
 
 	if(ptr->size > 0 && ptr->size <= (ptr->capacity - 1)/4 ){
-		int ret = resize(ptr,ptr->size/2);
-		if(!ret) {
+		int ret = resize(ptr,ptr->capacity/2);
+		if(ret) {
 			LOG_ERROR("del_min pq resize error!%s","");
 			return DEL_MIN_PQ_FAIL;
 		}
