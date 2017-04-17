@@ -122,7 +122,7 @@ int main(int ac,char *av[]){
     event.events = EPOLLIN | EPOLLET;
     server_epoll_add(epfd,listen_fd,&event);
     
-
+    init_timer();
     time_t time_now = time(NULL);
     LOG_INFO("listen_fd is : %d",listen_fd);
     LOG_INFO("server start at :%s",ctime(&time_now));
@@ -131,6 +131,7 @@ int main(int ac,char *av[]){
     /*event-driven大体框架*/
     for(;;){
         int n = server_epoll_wait(epfd,events,MAXEVENTS,0);
+        int wait_time = find_timer();
 
         for(int i = 0; i < n; i++) {
             http_request_t *request = (http_request_t *)events[i].data.ptr;
