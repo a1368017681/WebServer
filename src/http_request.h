@@ -21,9 +21,11 @@ typedef struct {
 	int fd,epfd;
 	char buf[MAX_BUF];
 	int major;
-	int minjor;		
+	int minjor;
+	void *timer;		
 }http_request_t;
 
 void init_http_request(http_request_t* request,int listed_fd,int epfd,server_conf_t* conf);
+int http_close_connection(http_request_t* request);
 
 #endif

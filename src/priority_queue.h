@@ -9,8 +9,8 @@
 typedef int (*priority_queuq_cmp_ptr)(void* lhs,void* rhs);
 
 typedef struct {
-	int size; //当前大小
-	int capacity; //pq容量
+	uint size; //当前大小
+	uint capacity; //pq容量
 	priority_queuq_cmp_ptr cmp; //比较函数
 	void **priority_queue; 
 }priority_queue_t;
@@ -28,9 +28,9 @@ typedef enum {
 	PQ_ERROR_UNKNOWN
 }PQ_STATUS;
 
-PQ_STATUS init_pq(priority_queue_t* ptr,priority_queuq_cmp_ptr cmp,int size);
+PQ_STATUS init_pq(priority_queue_t* ptr,priority_queuq_cmp_ptr cmp,uint size);
 int is_empty_pq(priority_queue_t* ptr);
-int size_of_pq(priority_queue_t* ptr);
+uint size_of_pq(priority_queue_t* ptr);
 void* min_of_pq(priority_queue_t* ptr);
 PQ_STATUS insert_item_pq(priority_queue_t* ptr,void *item);
 PQ_STATUS del_min_pq(priority_queue_t* ptr);

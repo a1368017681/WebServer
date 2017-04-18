@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-PQ_STATUS init_pq(priority_queue_t* ptr,priority_queuq_cmp_ptr cmp,int size) {
+PQ_STATUS init_pq(priority_queue_t* ptr,priority_queuq_cmp_ptr cmp,uint size) {
 	ptr->priority_queue = (void **)s_malloc(sizeof(void*)*(size+1));
 	if(NULL == ptr->priority_queue) { //分配内存失败
 		LOG_ERROR("priority_queue malloc failed!%s","");
@@ -23,7 +23,7 @@ int is_empty_pq(priority_queue_t* ptr) {
 	return 0;
 }
 
-int size_of_pq(priority_queue_t* ptr) {
+uint size_of_pq(priority_queue_t* ptr) {
 	return ptr->size;
 }
 
@@ -34,7 +34,7 @@ void* min_of_pq(priority_queue_t* ptr) {
 	return ptr->priority_queue[1];
 }
 
-static int resize(priority_queue_t* ptr,int capacity) {
+static int resize(priority_queue_t* ptr,uint capacity) {
 	if(ptr->size >= capacity) {
 		LOG_ERROR("resize new capacity too small!%s","");
 		return -1;
@@ -53,14 +53,14 @@ static int resize(priority_queue_t* ptr,int capacity) {
 	return 0;
 }
 
-static void swap(priority_queue_t* ptr,int lhs,int rhs) {
+static void swap(priority_queue_t* ptr,uint lhs,uint rhs) {
 	void *temp = ptr->priority_queue[lhs];
 	ptr->priority_queue[lhs] = ptr->priority_queue[rhs];
 	ptr->priority_queue[rhs] = temp;
 }
 
-static void swim(priority_queue_t* ptr,int index) {
-	int k = index;
+static void swim(priority_queue_t* ptr,uint index) {
+	uint k = index;
 	while(k > 1 && ptr->cmp(ptr->priority_queue[k],ptr->priority_queue[k>>1])) {
 		swap(ptr,k,k>>1);
 		k >>= 1;
@@ -68,7 +68,7 @@ static void swim(priority_queue_t* ptr,int index) {
 }
 
 PQ_STATUS insert_item_pq(priority_queue_t* ptr,void *item) {
-	int size = ptr->size;
+	uint size = ptr->size;
 	if((size + 1) == ptr->capacity) {
 		int ret = resize(ptr,ptr->capacity * 2);
 		if(ret) {
@@ -84,10 +84,10 @@ PQ_STATUS insert_item_pq(priority_queue_t* ptr,void *item) {
 	return INSERT_PQ_OK;
 }
 
-static void sink(priority_queue_t* ptr,int index) {
-	int k = index;
+static void sink(priority_queue_t* ptr,uint index) {
+	uint k = index;
 	while((k<<1) <= ptr->size) {
-		int j = (k << 1);
+		uint j = (k << 1);
 		if(j < ptr->size && ptr->cmp(ptr->priority_queue[j+1],ptr->priority_queue[j])) {
 			j = j + 1;
 		}

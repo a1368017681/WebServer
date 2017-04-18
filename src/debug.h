@@ -11,7 +11,12 @@
 #define ACCEPT_ERROR "socket accept error!%s"
 #define SET_SOCKET_OPT_ERROR "setsockopt error!%s"
 
+#define NDEBUG 
+#ifdef NDEBUG
+#define DEBUG(M, ...)
+#else
 #define DEBUG(M, ...) fprintf(stderr, "DEBUG %s:%d: " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#endif
 
 #define ERRNO_INFO() (errno == 0 ? "None" : strerror(errno))
 

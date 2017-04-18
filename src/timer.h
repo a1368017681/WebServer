@@ -3,10 +3,11 @@
 
 #include "priority_queue.h"
 #include "http_request.h"
-#include "util.h"
+#include "memory_pool.h"
+
 
 #define TIMER_INFINITE -1
-#define TIMEOUT 500
+#define TIMEOUT_DEFAULT 500
 
 typedef int (*timer_handler_ptr)(http_request_t* request); 
 
@@ -24,16 +25,16 @@ typedef enum {
 }TIMER_STATUS;
 
 typedef struct {
-	int time;
+	uint time;
 	int closed;
 	timer_handler_ptr timer_handler;
 	http_request_t* request;
-}timer_node;
+}timer_node_t;
 
 TIMER_STATUS init_timer();
 int find_timer();
 TIMER_STATUS handle_expire_timers();
-TIMER_STATUS add_timer(http_request_t* rq,int timeout,timer_handler_ptr handler);
+TIMER_STATUS add_timer(http_request_t* rq,uint timeout,timer_handler_ptr handler);
 TIMER_STATUS del_timer(http_request_t* rq);
 
 #endif

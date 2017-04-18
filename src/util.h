@@ -11,6 +11,9 @@
 #include "parson.h"
 #include "debug.h"
 
+typedef unsigned int uint;
+typedef unsigned long long ull;
+
 #define CONF_FILE "server.json"
 #define PROGRAM_VERSION "1.0"
 
@@ -51,7 +54,6 @@ typedef struct{
 	uint thread_num;
 }server_conf_t;
 
-typedef unsigned int uint;
 READ_CONF_RET read_conf_file(char *file_name,server_conf_t *conf);
 int is_directory(const char* dirName);
 

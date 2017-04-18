@@ -37,6 +37,7 @@ static int comp(void* lhs,void* rhs) {
 
 int pq_test_data[maxn];
 int pq_test_result[maxn];
+
 static void pq_test() {
 	int test_count_before = test_count;
 	int test_pass_before = test_pass;

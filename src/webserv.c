@@ -15,6 +15,7 @@
 #include "debug.h"
 #include "epoll.h"
 #include "http_response.h"
+#include "timer.h"
 
 extern int errno;
 extern struct epoll_event *events;
@@ -130,8 +131,10 @@ int main(int ac,char *av[]){
 
     /*event-driven大体框架*/
     for(;;){
-        int n = server_epoll_wait(epfd,events,MAXEVENTS,0);
         int wait_time = find_timer();
+        DEBUG("main wait_time is = %d",wait_time);
+        int n = server_epoll_wait(epfd,events,MAXEVENTS,wait_time);
+        handle_expire_timers();
 
         for(int i = 0; i < n; i++) {
             http_request_t *request = (http_request_t *)events[i].data.ptr;
@@ -164,6 +167,7 @@ int main(int ac,char *av[]){
 
                     /*epoll操作*/
                     server_epoll_add(epfd,accept_fd,&event);
+                    add_timer(request_new,TIMEOUT_DEFAULT,http_close_connection);
                 }
             } else {
                 if ((events[i].events & EPOLLERR) ||
