@@ -135,17 +135,16 @@ int main(int ac,char *av[]){
         DEBUG("main wait_time is = %d",wait_time);
         int n = server_epoll_wait(epfd,events,MAXEVENTS,wait_time);
         handle_expire_timers();
-
         for(int i = 0; i < n; i++) {
             http_request_t *request = (http_request_t *)events[i].data.ptr;
             int fd = request->fd;
 
-            if(fd == listen_fd) { //fd为socket建立的fd表明这是一条新的连接
+            if(fd == listen_fd) { /*fd为socket建立的fd表明这是一条新的连接*/
                 int accept_fd;
 
-                for(;;) { //监听请求连接的数据
+                for(;;) { /*监听请求连接的数据*/
                     accept_fd = accept(listen_fd,(struct sockaddr_in *)&client_addr,&accept_len);
-                    if(accept_fd < 0) {  //accept出错
+                    if(accept_fd < 0) {  /*accept出错*/
                         if(errno != EAGAIN && errno != EWOULDBLOCK) {
                             LOG_ERROR(ACCEPT_ERROR,"");
                             break;
@@ -170,15 +169,13 @@ int main(int ac,char *av[]){
                     add_timer(request_new,TIMEOUT_DEFAULT,http_close_connection);
                 }
             } else {
-                if ((events[i].events & EPOLLERR) ||
-                    (events[i].events & EPOLLHUP) ||
-                    (!(events[i].events & EPOLLIN))) {
+                if ((events[i].events & EPOLLERR) || (events[i].events & EPOLLHUP) || (!(events[i].events & EPOLLIN))) {
                     LOG_ERROR("epoll error fd: %d", request->fd);
                     close(fd);
                     continue;
                 }
 
-                LOG_INFO("new data from fd : %d",fd);
+                LOG_INFO("new data come from fd : %d",fd);
                 do_request(events[i].data.ptr);
             }
         }

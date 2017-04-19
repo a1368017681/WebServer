@@ -9,9 +9,9 @@
 typedef int (*priority_queuq_cmp_ptr)(void* lhs,void* rhs);
 
 typedef struct {
-	uint size; //当前大小
-	uint capacity; //pq容量
-	priority_queuq_cmp_ptr cmp; //比较函数
+	uint size; /*当前大小*/
+	uint capacity; /*pq容量*/
+	priority_queuq_cmp_ptr cmp; /*比较函数*/
 	void **priority_queue; 
 }priority_queue_t;
 

@@ -5,7 +5,7 @@
 
 PQ_STATUS init_pq(priority_queue_t* ptr,priority_queuq_cmp_ptr cmp,uint size) {
 	ptr->priority_queue = (void **)s_malloc(sizeof(void*)*(size+1));
-	if(NULL == ptr->priority_queue) { //分配内存失败
+	if(NULL == ptr->priority_queue) { /*分配内存失败*/
 		LOG_ERROR("priority_queue malloc failed!%s","");
 		return INIT_PQ_FAIL;
 	}

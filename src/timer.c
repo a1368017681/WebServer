@@ -3,7 +3,7 @@
 #include "util.h"
 
 priority_queue_t Timer;
-uint Current_time; //毫秒为单位
+uint Current_time; /*毫秒为单位*/
 
 static void update_time();
 
@@ -44,7 +44,7 @@ int find_timer() {
 		timer_node_t* node = (timer_node_t*)min_of_pq(&Timer);
 		CHECK(NULL != node,"find_timer error for pq is empty!%s","");
 
-		if(node->closed) { //远端关闭连接
+		if(node->closed) { /*远端关闭连接*/
 			int ret = del_min_pq(&Timer);
 			CHECK(ret == DEL_MIN_PQ_OK,"node closed del_min_pq error!%s","");
 			s_free(node);
@@ -68,8 +68,9 @@ TIMER_STATUS handle_expire_timers() {
 		timer_node_t* node = (timer_node_t*)min_of_pq(&Timer);
 		CHECK(NULL != node,"handle_expire_timers: min_of_pq error!%s","");
 
-		if(node->closed) { //远端关闭连接
+		if(node->closed) { /*远端关闭连接*/
 			int ret = del_min_pq(&Timer);
+			DEBUG("in handle_expire_timers: del_min_pq such closed conn%s","");
 			CHECK(ret == DEL_MIN_PQ_OK,"handle_expire_timers: del_min_pq error!%s","");
 			s_free(node);
 			continue;
@@ -105,7 +106,7 @@ TIMER_STATUS add_timer(http_request_t* rq,uint timeout,timer_handler_ptr handler
 }
 
 TIMER_STATUS del_timer(http_request_t* rq) {
-	DEBUG("in del_timer");
+	DEBUG("in del_timer%s","");
 	update_time();
 	timer_node_t* node = rq->timer;
 	CHECK(node != NULL,"del_timer: rq->timer is NULL%s","");
