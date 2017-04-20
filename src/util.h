@@ -18,9 +18,13 @@ typedef unsigned long long ull;
 #define CONF_FILE "server.json"
 #define PROGRAM_VERSION "1.0"
 
+#define CR "\r"
+#define LF "\n"
+#define CRLF "\r\n"
+
 #define BUF_LEN 4096
 
-#define HTML_TEXT "<html><head><title></title></head><body></body></html>"
+#define HTML_TEXT "<html><head><title></title></head><body>Hello World</body></html>"
 
 #define CUR_DIR "."
 #define FATHER_DIR ".."

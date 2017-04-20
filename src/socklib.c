@@ -106,3 +106,7 @@ int connect_to_server(char *host,int portnum){
         return -1;
     return sock;
 }
+
+void write_to_fd(int fd,char* data,int len) {
+    return ;
+}

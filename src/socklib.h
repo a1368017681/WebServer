@@ -19,5 +19,6 @@
 int make_server_socket(uint port_num);
 int connect_to_server(char*,int);
 int make_socket_non_blocking(int listen_fd);
+void write_to_fd(int fd,char* data,int len);
 
 #endif

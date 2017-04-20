@@ -42,7 +42,7 @@ static int list_empty(list_t* head) {
 #define OFFSET(TYPE,MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
 #define CONTAINER_OF(ptr,type,member) ({ \
-	const __typeof__( ((type*)0)->member) *__mptr = (ptr); \  
+	const __typeof__( ((type*)0)->member) *__mptr = (ptr); \
 	(type*)( (char*) __mptr - OFFSET(type,member)); \
 })
 

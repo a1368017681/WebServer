@@ -7,6 +7,7 @@ HTTP_REQUEST_STATUS init_http_request(http_request_t* request,int listed_fd,int 
 	request->root = conf->root;
 	request->cur_pos = 0;
 	request->last = 0;
+	request->closed = 0;
 	LIST_INIT_HEAD(&(request->list));
 	return INIT_REQUEST_OK;
 }

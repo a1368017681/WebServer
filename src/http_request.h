@@ -30,6 +30,7 @@ typedef enum {
 typedef struct {
 	void* root;/*根目录位置*/
 	int fd,epfd;
+	int closed;
 	char buf[MAX_BUF];
 	int major;
 	int minjor;
