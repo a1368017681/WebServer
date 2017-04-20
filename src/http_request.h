@@ -35,7 +35,7 @@ typedef struct {
 	int minjor;
 	void *timer;	
 	HTTP_METHOD method;
-	list_t header_list;
+	list_t list;
 
 	uint cur_pos,last; /*socket读取位置*/
 }http_request_t;
