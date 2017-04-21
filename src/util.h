@@ -18,9 +18,6 @@ typedef unsigned long long ull;
 #define CONF_FILE "server.json"
 #define PROGRAM_VERSION "1.0"
 
-#define CR "\r"
-#define LF "\n"
-#define CRLF "\r\n"
 
 #define BUF_LEN 4096
 

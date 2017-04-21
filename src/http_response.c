@@ -57,11 +57,12 @@ void do_request(void* ptr) {
     http_request_t *request = (http_request_t* )ptr;
     int fd = request->fd;
     char file_name[LEN];
-    char *tmp_buf = (char*)s_malloc(sizeof(char)*MAX_BUF);
+    char *tmp_buf = NULL;
     del_timer(request);
     for(;;) { //读取数据流
-        //tmp_buf = &request->buf[request->cur_pos % MAX_BUF];
-        int n = read(fd,tmp_buf,MAX_BUF);
+        tmp_buf = &request->buf[request->last % MAX_BUF];
+        int rest_size = MIN(MAX_BUF-(request->last - request->cur_pos) - 1, MAX_BUF-(request->last % MAX_BUF));
+        int n = read(fd,tmp_buf,rest_size);
         if(n == 0) {
             LOG_INFO("read call ret = 0,need to close connection!%s","");
             int ret = http_close_connection(request);
@@ -81,9 +82,24 @@ void do_request(void* ptr) {
                 return ;
             }
         }
-
+        request->last += n;
         LOG_INFO("ready to parse request line!%s","");
-        LOG_INFO("data is %s",tmp_buf);
+        //LOG_INFO("request-data is :\n%s",tmp_buf);
+
+        HTTP_PARSE_RESULT ret = http_parse_request_header(request);
+        if(ret != HTTP_PARSE_OK){
+            if(ret != HTTP_CONTINUE_PARSE) {
+                LOG_ERROR("do_request: http_parse_request_header error!%s","");
+                ret = http_close_connection(request);
+                CHECK(0 == ret,"do_request : http_close_connection error!%s","");
+                return ;
+            }
+            continue;
+        }
+        LOG_INFO("method=%.*s",(int)(request->method_end - request->request_start),(char*)request->request_start);
+        LOG_INFO("uri=%.*s",(int)(request->uri_end - request->uri_start),(char*)request->uri_start);
+
+        ret = http_parse_request_body(request);
 
         http_response_t *rp = (http_response_t*)s_malloc(sizeof(http_response_t));
         CHECK_EXIT(NULL != rp,"do_request : http_response malloc error!%s","");

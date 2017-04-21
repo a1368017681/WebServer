@@ -30,10 +30,15 @@ typedef enum {
 typedef struct {
 	void* root;/*根目录位置*/
 	int fd,epfd;
-	int closed;
+	int state; /*parser的状态机需要*/
 	char buf[MAX_BUF];
+	void* request_start;
+	void* request_end;
+	void* method_end;
+	void* uri_start;
+	void* uri_end;
 	int major;
-	int minjor;
+	int minor;
 	void *timer;	
 	HTTP_METHOD method;
 	list_t list;
