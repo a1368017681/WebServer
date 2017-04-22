@@ -1,5 +1,7 @@
 #include "http_parse.h"
 #include "util.h"
+#include "list.h"
+#include "memory_pool.h"
 
 #define CR '\r'
 #define LF '\n'
@@ -49,6 +51,17 @@ enum {
 	rhs_spaces_after_digit,
 	rhs_almost_done
 }request_header_state;
+
+enum {
+	rbs_start = 0,
+	rbs_key,
+	rbs_spaces_before_colon,
+	rbs_spaces_after_colon,
+	rbs_value,
+	rbs_cr,
+	rbs_crlf,
+	rbs_crlfcr
+}request_body_state;
 
 HTTP_PARSE_RESULT http_parse_request_header(http_request_t *rq) {
 	/*状态机处理*/
@@ -255,5 +268,100 @@ HTTP_PARSE_RESULT http_parse_request_header(http_request_t *rq) {
 }
 
 HTTP_PARSE_RESULT http_parse_request_body(http_request_t *rq) {
-	return HTTP_PARSE_REQUEST_BODY_OK;
+	request_body_state = rq->state;
+	u_char ch,*p;
+	uint i;
+	http_header_t *header;
+	void* cur_header_key_start;
+	void* cur_header_key_end;
+	void* cur_header_value_start;
+	void* cur_header_value_end;
+	for(i = rq->cur_pos; i < rq->last; i++) {
+		p = (u_char*)&rq->buf[i % MAX_BUF];
+		ch = *p;
+		switch(request_body_state) {
+			case rbs_start:
+				if(ch == CR || ch == LF) {
+					break;
+				}
+				cur_header_key_start = p;
+				request_body_state = rbs_key;
+				break;
+			case rbs_key:
+				if(ch == ' '){
+					request_body_state = rbs_spaces_before_colon;
+					cur_header_key_end = p;
+					break;
+				}
+				if(ch == ':'){
+					request_body_state = rbs_spaces_after_colon;
+					cur_header_key_end = p;
+					break;
+				}
+				break;
+			case rbs_spaces_before_colon:
+				if(ch == ' '){
+					break;
+				}
+				if(ch == ':'){
+					request_body_state = rbs_spaces_after_colon;
+					break;
+				}else {
+					return HTTP_PARSE_INVALID_HEADER;
+				}
+				break;
+			case rbs_spaces_after_colon:
+				if(ch == ' '){
+					break;
+				}
+				request_body_state = rbs_value;
+				cur_header_value_start = p;
+				break;
+			case rbs_value:
+				if(ch == CR) {
+					request_body_state = rbs_cr;
+					cur_header_value_end = p;
+				}
+				if(ch == LF) {
+					request_body_state = rbs_crlf;
+					cur_header_value_end = p;
+				}
+				break;
+			case rbs_cr:
+				if(ch == LF) {
+					request_body_state = rbs_crlf;
+					header = (http_header_t*)s_malloc(sizeof(http_header_t));
+					header->key_start = cur_header_key_start;
+					header->key_end = cur_header_key_end;
+					header->value_start = cur_header_value_start;
+					header->value_end = cur_header_value_end;
+					LIST_ADD_NODE(&(header->list),&(rq->list));
+					break;
+				}else{
+					return HTTP_PARSE_INVALID_HEADER;
+				}
+				break;
+			case rbs_crlf:
+				if(ch == CR) {
+					request_body_state = rbs_crlfcr;
+				}else{
+					request_body_state = rbs_key;
+					cur_header_key_start = p;
+					break;
+				}
+				break;
+			case rbs_crlfcr:
+				if(ch == LF) {
+					rq->cur_pos = i + 1;
+					rq->state = rbs_start;
+					return HTTP_PARSE_OK;
+				}else{
+					return HTTP_PARSE_INVALID_HEADER;
+				}
+				break;
+		}
+	}
+	rq->cur_pos = i;
+	rq->state = request_body_state;
+	return HTTP_CONTINUE_PARSE;
 }

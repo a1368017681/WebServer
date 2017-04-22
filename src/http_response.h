@@ -6,7 +6,8 @@
 #include "http_parse.h"
 #include "http_header_handler.h"
 
-#define LEN 4096
+#define LEN 1059
+#define QUERY_SYMBOL '?'
 
 typedef enum {
 	HTTP_OK = 200,

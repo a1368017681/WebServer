@@ -1,4 +1,5 @@
 #include "util.h"
+#include <string.h>
 
 /*读取配置文件*/
 READ_CONF_RET read_conf_file(char *file_name,server_conf_t *conf) {
@@ -30,10 +31,12 @@ READ_CONF_RET read_conf_file(char *file_name,server_conf_t *conf) {
 		return CONF_FILE_FORM_WRONG;
 	}
 
-	conf->root = (void*)root;
+	char* tmp = (char*)malloc(sizeof(root));
+	strcpy(tmp,root);
+	conf->root = (void*)tmp;
 	conf->port = port;
 	conf->thread_num = thread_num;
-	
+
 	json_value_free(server_conf);
 	fclose(fp);
 	return READ_CONF_OK;

@@ -89,6 +89,8 @@ int main(int ac,char *av[]){
     READ_CONF_RET rc_ret = READ_CONF_OK;
     server_conf_t conf;
     rc_ret = read_conf_file(conf_file,&conf);
+    LOG_INFO("main: conf info: root=%s,port=%d,threadnum=%d",(char*)(conf.root),conf.port,conf.thread_num);
+
     CHECK_EXIT(READ_CONF_OK == rc_ret,"read conf file error!%s","");
 
     /*注册signal的处理函数，解决SIGPIP可能导致的系统崩溃问题*/

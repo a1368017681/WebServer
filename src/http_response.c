@@ -6,9 +6,14 @@
 #include "util.h"
 #include "rio.h"
 #include "epoll.h"
+#include "list.h"
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
 
 mime_type_t mime[] = {
     {".html","text/html"},
@@ -51,14 +56,16 @@ http_status_code_description_t http_status_code_description[] = {
 
 static void do_response_by_code(int fd,char* entity,HTTP_STATUS_CODE code,const char* code_description,char* msg_entity);
 static const char* get_description_by_code(HTTP_STATUS_CODE code);
+static void uri_parse(char* uri,uint uri_len,char* file_name,char* query_string);
 static char* ROOT = NULL;
 
 void do_request(void* ptr) {
     http_request_t *request = (http_request_t* )ptr;
     int fd = request->fd;
-    char file_name[LEN];
     char *tmp_buf = NULL;
     del_timer(request);
+    ROOT = request->root;
+    LOG_INFO("do_request: ROOT = %s ,root = %s",ROOT,request->root);
     for(;;) { //读取数据流
         tmp_buf = &request->buf[request->last % MAX_BUF];
         int rest_size = MIN(MAX_BUF-(request->last - request->cur_pos) - 1, MAX_BUF-(request->last % MAX_BUF));
@@ -99,13 +106,34 @@ void do_request(void* ptr) {
         LOG_INFO("method=%.*s",(int)(request->method_end - request->request_start),(char*)request->request_start);
         LOG_INFO("uri=%.*s",(int)(request->uri_end - request->uri_start),(char*)request->uri_start);
 
-        ret = http_parse_request_body(request);
-
+        ret = http_parse_request_body(request); 
+        if(ret != HTTP_PARSE_OK){
+            if(ret != HTTP_CONTINUE_PARSE) {
+                LOG_ERROR("do_request: http_parse_request_body error!%s","");
+                ret = http_close_connection(request);
+                CHECK(0 == ret,"do_request : http_close_connection error!%s","");
+                return ;
+            }
+            continue;
+        }
+        //http_parse_entity_body 
+        /*list_t* pos;
+        http_header_t* tmp;
+        LIST_FOR_EACH(pos,&(request->list)) {
+            tmp = LIST_ENTRY(pos,http_header_t,list);
+            fprintf(stderr,"%.*s : %.*s\n",(int)(tmp->key_end - tmp->key_start),tmp->key_start,(int)(tmp->value_end - tmp->value_start),tmp->value_start);
+        }
+        fprintf(stderr, "%.*s\n",10 ,&request->buf[request->cur_pos]);*/
+        
         http_response_t *rp = (http_response_t*)s_malloc(sizeof(http_response_t));
         CHECK_EXIT(NULL != rp,"do_request : http_response malloc error!%s","");
 
         init_response(rp,fd);
 
+        char file_name[LEN];
+        char query_string[LEN];
+        uri_parse((char*)request->uri_start,(int)(request->uri_end - request->uri_start),file_name,query_string);
+        struct stat st_buf;
         do_response_by_code(fd,file_name,HTTP_OK,get_description_by_code(HTTP_OK),"");
     }
 
@@ -124,6 +152,33 @@ HTTP_RESPONSE_STATUS init_response(http_response_t* rp,int fd) {
     rp->keep_alive = 0;
     rp->status = 0;
     return INIT_RESPONSE_OK;  
+}
+
+static void uri_parse(char* uri,uint uri_len,char* file_name,char* query_string) {
+    //fprintf(stderr, "uri = %.*s\n",uri_len,uri);
+    CHECK(NULL != uri,"uri_parse: uri is NULL%s","");
+    CHECK(uri_len < URL_MAX_LEN,"uri_parse: uri too long!%s","");
+    int file_length = 0;
+    uri[uri_len] = '\0';
+    char* ptr = strchr(uri,QUERY_SYMBOL);
+    if(ptr){
+        file_length = (int)(ptr-uri);
+    } else{
+        file_length = uri_len;
+    }
+    strcpy(file_name,ROOT);
+    //fprintf(stderr, "%s %s\n",file_name,ROOT);
+    strncat(file_name,uri,file_length);
+    char* last_sprit = strchr(file_name,'/');
+    char* last_dot = strchr(last_sprit,'.');
+    if(file_name[strlen(file_name) - 1] != '/' && last_dot == NULL) {
+        strncat(file_name,"/",1);
+    }
+    if(file_name[strlen(file_name) - 1] == '/'){
+        strcat(file_name,"index.html");
+    }
+    LOG_INFO("uri_parse: file_name = %s",file_name);
+    return ;
 }
 
 static void do_response_by_code(int fd,char* entity,HTTP_STATUS_CODE code,const char* code_description,char* msg_entity) {

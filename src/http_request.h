@@ -11,6 +11,7 @@
 #include "list.h"
 
 #define MAX_BUF 8192
+#define URL_MAX_LEN 2083 //IE的标准
 
 /*定义所支持的HTTP请求方式*/
 typedef enum {
@@ -41,10 +42,17 @@ typedef struct {
 	int minor;
 	void *timer;	
 	HTTP_METHOD method;
-	list_t list;
 
+	list_t list;
+	
 	uint cur_pos,last; /*socket读取位置*/
 }http_request_t;
+
+typedef struct {
+	void *key_start,*key_end;
+	void *value_start,*value_end;
+	list_t list;
+}http_header_t;
 
 typedef struct {
 	int fd;
