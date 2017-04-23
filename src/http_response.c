@@ -11,8 +11,12 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/mman.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 
 
 mime_type_t mime[] = {
@@ -57,6 +61,8 @@ http_status_code_description_t http_status_code_description[] = {
 static void do_response_by_code(int fd,char* entity,HTTP_STATUS_CODE code,const char* code_description,char* msg_entity);
 static const char* get_description_by_code(HTTP_STATUS_CODE code);
 static void uri_parse(char* uri,uint uri_len,char* file_name,char* query_string);
+static void process_response(int fd, char *file_name, size_t file_size, http_response_t *rp);
+static const char* get_file_type(const char* file);
 static char* ROOT = NULL;
 
 void do_request(void* ptr) {
@@ -65,7 +71,7 @@ void do_request(void* ptr) {
     char *tmp_buf = NULL;
     del_timer(request);
     ROOT = request->root;
-    LOG_INFO("do_request: ROOT = %s ,root = %s",ROOT,request->root);
+    //LOG_INFO("do_request: ROOT = %s ,root = %s",ROOT,request->root);
     for(;;) { //读取数据流
         tmp_buf = &request->buf[request->last % MAX_BUF];
         int rest_size = MIN(MAX_BUF-(request->last - request->cur_pos) - 1, MAX_BUF-(request->last % MAX_BUF));
@@ -93,7 +99,7 @@ void do_request(void* ptr) {
         LOG_INFO("ready to parse request line!%s","");
         //LOG_INFO("request-data is :\n%s",tmp_buf);
 
-        HTTP_PARSE_RESULT ret = http_parse_request_header(request);
+        int ret = http_parse_request_header(request);
         if(ret != HTTP_PARSE_OK){
             if(ret != HTTP_CONTINUE_PARSE) {
                 LOG_ERROR("do_request: http_parse_request_header error!%s","");
@@ -123,7 +129,7 @@ void do_request(void* ptr) {
             tmp = LIST_ENTRY(pos,http_header_t,list);
             fprintf(stderr,"%.*s : %.*s\n",(int)(tmp->key_end - tmp->key_start),tmp->key_start,(int)(tmp->value_end - tmp->value_start),tmp->value_start);
         }
-        fprintf(stderr, "%.*s\n",10 ,&request->buf[request->cur_pos]);*/
+        /*fprintf(stderr, "%.*s\n",10 ,&request->buf[request->cur_pos]);*/
         
         http_response_t *rp = (http_response_t*)s_malloc(sizeof(http_response_t));
         CHECK_EXIT(NULL != rp,"do_request : http_response malloc error!%s","");
@@ -133,8 +139,44 @@ void do_request(void* ptr) {
         char file_name[LEN];
         char query_string[LEN];
         uri_parse((char*)request->uri_start,(int)(request->uri_end - request->uri_start),file_name,query_string);
+        LOG_INFO("do_request: file_name is %s",file_name);
         struct stat st_buf;
-        do_response_by_code(fd,file_name,HTTP_OK,get_description_by_code(HTTP_OK),"");
+        //struct stat tt;
+        //fprintf(stderr, "do_request: file_name: %s stat: %d\n", file_name, stat(file_name,&tt));
+        ret = stat(file_name,&st_buf);
+        if(ret < 0) {
+            if(errno == ENOENT) {
+                do_response_by_code(fd,file_name,HTTP_NOT_FOUND,get_description_by_code(HTTP_NOT_FOUND),"server cannot find file!");
+            }else if(errno == EACCES) {
+                //LOG_INFO("asdfsadfgdfg%s","");
+                do_response_by_code(fd,file_name,HTTP_FORBIDDEN,get_description_by_code(HTTP_FORBIDDEN),"file forbidden access!");
+            }else {
+                do_response_by_code(fd,file_name,HTTP_INTERNAL_SERVER_ERROR,get_description_by_code(HTTP_INTERNAL_SERVER_ERROR),"server internal error!");
+            }
+            //LOG_INFO("stat error!%s","");
+            continue;
+        }
+        if(!(S_ISREG(st_buf.st_mode)) || !(S_IRUSR & st_buf.st_mode)){
+            //LOG_INFO("asdas%s","");
+            do_response_by_code(fd,file_name,HTTP_FORBIDDEN,get_description_by_code(HTTP_FORBIDDEN),"file_forbidden access!");
+            continue;
+        }
+        rp->modified_time = st_buf.st_mtime;
+        handle_header_handler(request,rp);
+        CHECK(list_empty(&(request->list)) == 1,"do_request: after handle header,list should be empty!%s","");
+        if(!(rp->status)){
+            rp->status = HTTP_OK;
+        }
+
+        process_response(fd,file_name,st_buf.st_size,rp);
+        //do_response_by_code(fd,file_name,HTTP_OK,get_description_by_code(HTTP_OK),"OK");
+        if(!rp->keep_alive) {
+            s_free(rp);
+            ret = http_close_connection(request);
+            CHECK(0 == ret,"do_request : http_close_connection error!%s","");
+            return ;
+        }
+        s_free(rp);
     }
 
     struct epoll_event event;
@@ -177,7 +219,49 @@ static void uri_parse(char* uri,uint uri_len,char* file_name,char* query_string)
     if(file_name[strlen(file_name) - 1] == '/'){
         strcat(file_name,"index.html");
     }
-    LOG_INFO("uri_parse: file_name = %s",file_name);
+    //LOG_INFO("uri_parse: file_name = %s",file_name);
+    return ;
+}
+
+static void process_response(int fd, char *file_name, size_t file_size, http_response_t *rp) {
+    char header[MAX_BUF];
+    char tmp_buf[MAX_BUF];
+    sprintf(header,"HTTP/1.1 %d %s\r\n",rp->status,get_description_by_code(rp->status));
+    if(rp->keep_alive) {
+        sprintf(header,"%sConnection: keep-alive\r\n",header);
+        sprintf(header,"%sKeep-Alive: timeout=%d\r\n",header,TIMEOUT_DEFAULT);
+    }
+    const char* last_dot = strrchr(file_name,'.');
+
+    const char* file_type = get_file_type(last_dot);
+    LOG_INFO("file_type is %s",last_dot);
+    struct tm time;
+    if(rp->modified) {
+        sprintf(header, "%sContent-type: %s\r\n", header, file_type);
+        sprintf(header, "%sContent-length: %zu\r\n", header, file_size);
+        localtime_r(&(rp->modified_time), &time);
+        strftime(tmp_buf, LEN,  "%a, %d %b %Y %H:%M:%S GMT", &time);
+        sprintf(header, "%sLast-Modified: %s\r\n", header, tmp_buf);
+    }
+    sprintf(header, "%sServer: WebServer\r\n\r\n", header); 
+    
+    //do_response_by_code(fd,file_name,HTTP_OK,get_description_by_code(HTTP_OK),"OK");
+    size_t n = (size_t) rio_writen(fd,header,strlen(header));
+    if(n != strlen(header)) {
+        LOG_ERROR("process_response: rio wriren error!%s","");
+        return ;
+    }
+    if(rp->modified) {
+        int srcfd = open(file_name, O_RDONLY, 0);
+        CHECK(srcfd > 2, "process_response: open error!%s","");
+        // can use sendfile
+        char *srcaddr = mmap(NULL, file_size, PROT_READ, MAP_PRIVATE, srcfd, 0);
+        CHECK(srcaddr != (void *) -1, "process_response: mmap error!%s","");
+        close(srcfd);
+        n = rio_writen(fd, srcaddr, file_size);
+        // check(n == filesize, "rio_writen error");
+        munmap(srcaddr, file_size);
+    }
     return ;
 }
 
@@ -188,7 +272,7 @@ static void do_response_by_code(int fd,char* entity,HTTP_STATUS_CODE code,const 
     }
     char header[MAX_BUF],body[MAX_BUF];
 
-    sprintf(body, HTML_TEXT);
+    sprintf(body, "<html><body>%s</body></html>",msg_entity);
     /*sprintf(body, "%s<body bgcolor=""ffffff"">\n", body);
     sprintf(body, "%s%d: %s\n", body, code, msg_entity);
     sprintf(body, "%s<p>%s: %s\n</p>", body, msg_entity, entity);
@@ -213,4 +297,18 @@ static const char* get_description_by_code(HTTP_STATUS_CODE code) {
         }
     }
     return NULL;
+}
+
+static const char* get_file_type(const char* file_type) {
+    int i;
+    if(file_type == NULL) {
+        return "text/plain";
+    }
+    int size = sizeof(mime)/sizeof(mime_type_t);
+    for(i = 0; i < size; i++) {
+        if(strcmp(file_type,mime[i].file_type) == 0) {
+            return mime[i].file_val;
+        }
+    }
+    return mime[i-1].file_val;
 }
