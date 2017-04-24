@@ -4,7 +4,7 @@ PROJECT(webserv C)
 
 file(GLOB SOURCES "src/*.c")
 if (CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -ansi -Wall -Wpedantic -D_GNU_SOURCE -std=c99")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2 -ansi -Wall -pthread -Wpedantic -D_GNU_SOURCE -std=c99")
 endif()
 
 

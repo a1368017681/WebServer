@@ -1,11 +1,13 @@
 #include <debug.h>
 #include "pq_test.h"
 #include "list_test.h"
+#include "threadpool_test.h"
 
 
 static void test() {
 	pq_test();
 	list_test();
+	threadpool_test();
 }
 
 int main(){

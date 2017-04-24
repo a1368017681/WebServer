@@ -16,6 +16,7 @@
 #include "epoll.h"
 #include "http_response.h"
 #include "timer.h"
+#include "thread_pool.h"
 
 extern int errno;
 extern struct epoll_event *events;
@@ -126,6 +127,10 @@ int main(int ac,char *av[]){
     server_epoll_add(epfd,listen_fd,&event);
     
     init_timer();
+    
+    threadpool_t *pool = threadpool_create(conf.thread_num,MAX_QUEUE);
+    CHECK_EXIT(pool != NULL,"main: threadpool_create error!%s","");
+
     time_t time_now = time(NULL);
     LOG_INFO("listen_fd is : %d",listen_fd);
     LOG_INFO("server start at :%s",ctime(&time_now));
@@ -178,11 +183,15 @@ int main(int ac,char *av[]){
                 }
 
                 LOG_INFO("new data come from fd : %d",fd);
-                do_request(events[i].data.ptr);
+                //do_request(events[i].data.ptr);
+                threadpool_add(pool,do_request,events[i].data.ptr);
             }
         }
     }
 
+    if (threadpool_destroy(pool, 1) < 0) {
+        LOG_ERROR("destroy threadpool failed %s","");
+    }
     /*由于TCP/IP协议栈是维护着一个接收和发送缓冲区的。
     在接收到来自客户端的数据包后，服务器端的TCP/IP协议栈应该会做如下处理：
     如果收到的是请求连接的数据包，则传给监听着连接请求端口的socetfd套接字，

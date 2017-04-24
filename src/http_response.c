@@ -139,7 +139,7 @@ void do_request(void* ptr) {
         char file_name[LEN];
         char query_string[LEN];
         uri_parse((char*)request->uri_start,(int)(request->uri_end - request->uri_start),file_name,query_string);
-        LOG_INFO("do_request: file_name is %s",file_name);
+        //LOG_INFO("do_request: file_name is %s",file_name);
         struct stat st_buf;
         //struct stat tt;
         //fprintf(stderr, "do_request: file_name: %s stat: %d\n", file_name, stat(file_name,&tt));
